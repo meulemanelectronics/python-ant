@@ -108,7 +108,6 @@ class Driver(object):
 
         line, length = 0, 16
         while data:
-            print('%04X' % line, *('%02X' % byte for byte in data[:length]))
             data = data[length:]
             line += length
 
