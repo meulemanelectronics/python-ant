@@ -113,16 +113,23 @@ channel.period = 8086
 # And ANT frequency 57
 channel.frequency = 57
 
+running = True
 try:
     # Time to go live
     channel.open()
 
     print("Listening for events...")
-    while True:
+    while running:
         time.sleep(0.1)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYUP and event.key == pygame.K_q:
+                running = False
         app.on_update()
-
+    
 finally:
+    pygame.quit()
     # Shutdown channel
     channel.close()
     channel.unassign()
