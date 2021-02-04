@@ -1,20 +1,22 @@
 """
-Initialize a basic broadcast slave channel for listening to
-an ANT+ combined speed/cadence sensor (e.g. Garmin GSC10)
+Use pygame to show speed and cadence data in a window using a big font
+(only for combined speed/cadence sensor S&C profile - e.g. Garmin GSC10)
 
 Based heavily on https://gist.github.com/ramunasd/a2e40cd13dd4cacf5685
 """
 from __future__ import print_function
 
-
 import sys
 import time
+
+import pygame
+import pygame.freetype
+from pygame.locals import *
 
 from ant.core import driver, node, event, message
 from ant.core.constants import *
 
 from config import *
-
 
 def convertSB(raw):
     value = int(raw[1]) << 8
@@ -27,6 +29,9 @@ class CadenceListener(event.EventCallback):
     lastW = 0
     wheelSpeed = 0
 
+    def getWheelSpeed(self):
+        return self.wheelSpeed
+
     def process(self, msg):
         if isinstance(msg, message.ChannelBroadcastDataMessage):
 
@@ -37,10 +42,28 @@ class CadenceListener(event.EventCallback):
             crankRevolutions = convertSB(msg.payload[3:5])
             wheelRevolutions =  convertSB(msg.payload[7:9])
             if speedTime > self.lastW:
-                self.wheelSpeed = 3.6 * 2105.0 / (speedTime - self.lastW)
+                self.wheelSpeed = 3600 * 2105.0 /1024 / (speedTime - self.lastW)
             self.lastW = speedTime
             self.lastC = cadenceTime
-            print(cadenceTime, ' ', speedTime, ':', crankRevolutions, self.wheelSpeed)
+            print(self.wheelSpeed)
+
+
+
+class Biscuit:
+    listener = CadenceListener()
+    def __init__(self):
+        pygame.init()
+        self.surface = pygame.display.set_mode((600,400))
+        self.font = pygame.freetype.SysFont('Consolas', 90)
+
+    def on_update(self):
+        self.surface.fill((10,20,10))
+        self.font.render_to(self.surface,
+                            (25,100),
+                            "{: 5.1f} km/h".format(self.listener.wheelSpeed),
+                            (0,255,0))
+        pygame.display.flip()
+
 
 
 NETKEY = b'\xB9\xA5\x21\xFB\xBD\x72\xC3\x45'
@@ -48,7 +71,8 @@ NETKEY = b'\xB9\xA5\x21\xFB\xBD\x72\xC3\x45'
 # Initialize
 stick = driver.USB1Driver(SERIAL, log=LOG)# , debug=DEBUG)
 antnode = node.Node(stick)
-antnode.registerEventListener(CadenceListener())
+app = Biscuit()
+antnode.registerEventListener(app.listener)
 antnode.start(False)
 
 # Set network key
@@ -81,7 +105,9 @@ try:
 
     print("Listening for events...")
     while True:
-        time.sleep(60)
+        time.sleep(0.1)
+        app.on_update()
+
 finally:
     # Shutdown channel
     channel.close()
