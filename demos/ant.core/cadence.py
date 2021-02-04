@@ -43,7 +43,7 @@ class CadenceListener(event.EventCallback):
             print(cadenceTime, ' ', speedTime, ':', crankRevolutions, self.wheelSpeed)
 
 
-NETKEY = '\xB9\xA5\x21\xFB\xBD\x72\xC3\x45'
+NETKEY = b'\xB9\xA5\x21\xFB\xBD\x72\xC3\x45'
 
 # Initialize
 stick = driver.USB1Driver(SERIAL, log=LOG)# , debug=DEBUG)
