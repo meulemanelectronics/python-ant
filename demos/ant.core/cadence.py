@@ -28,6 +28,7 @@ class CadenceListener(event.EventCallback):
     lastC = 0
     lastW = 0
     wheelSpeed = 0
+    crankSpeed = 0
 
     def getWheelSpeed(self):
         return self.wheelSpeed
@@ -43,6 +44,8 @@ class CadenceListener(event.EventCallback):
             wheelRevolutions =  convertSB(msg.payload[7:9])
             if speedTime > self.lastW:
                 self.wheelSpeed = 3600 * 2105.0 /1024 / (speedTime - self.lastW)
+            if cadenceTime > self.lastC:
+                self.crankSpeed = 1024 * 60.0 / (cadenceTime - self.lastC) 
             self.lastW = speedTime
             self.lastC = cadenceTime
             print(self.wheelSpeed)
@@ -53,14 +56,18 @@ class Biscuit:
     listener = CadenceListener()
     def __init__(self):
         pygame.init()
-        self.surface = pygame.display.set_mode((600,400))
+        self.surface = pygame.display.set_mode((600,500))
         self.font = pygame.freetype.SysFont('Consolas', 90)
 
     def on_update(self):
         self.surface.fill((10,20,10))
         self.font.render_to(self.surface,
-                            (25,100),
+                            (25,80),
                             "{: 5.1f} km/h".format(self.listener.wheelSpeed),
+                            (0,255,0))
+        self.font.render_to(self.surface,
+                            (25,300),
+                            "{: 5.1f} rpm".format(self.listener.crankSpeed),
                             (0,255,0))
         pygame.display.flip()
 
