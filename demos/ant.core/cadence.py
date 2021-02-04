@@ -34,21 +34,21 @@ class CadenceListener(event.EventCallback):
         return self.wheelSpeed
 
     def process(self, msg):
-        if isinstance(msg, message.ChannelBroadcastDataMessage):
+        if not isinstance(msg, message.ChannelBroadcastDataMessage):
+            return
 
-            cadenceTime = convertSB(msg.payload[1:3])
-            speedTime = convertSB(msg.payload[5:7])
-            if cadenceTime == self.lastC and speedTime == self.lastW:
-                return
-            crankRevolutions = convertSB(msg.payload[3:5])
-            wheelRevolutions =  convertSB(msg.payload[7:9])
-            if speedTime > self.lastW:
-                self.wheelSpeed = 3600 * 2105.0 /1024 / (speedTime - self.lastW)
-            if cadenceTime > self.lastC:
-                self.crankSpeed = 1024 * 60.0 / (cadenceTime - self.lastC) 
-            self.lastW = speedTime
-            self.lastC = cadenceTime
-            print(self.wheelSpeed)
+        cadenceTime = convertSB(msg.payload[1:3])
+        speedTime = convertSB(msg.payload[5:7])
+        if cadenceTime == self.lastC and speedTime == self.lastW:
+            return
+        crankRevolutions = convertSB(msg.payload[3:5])
+        wheelRevolutions =  convertSB(msg.payload[7:9])
+        if speedTime > self.lastW:
+            self.wheelSpeed = 3600 * 2105.0 /1024 / (speedTime - self.lastW)
+        if cadenceTime > self.lastC:
+            self.crankSpeed = 1024 * 60.0 / (cadenceTime - self.lastC) 
+        self.lastW = speedTime
+        self.lastC = cadenceTime
 
 
 
