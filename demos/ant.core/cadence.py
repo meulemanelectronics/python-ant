@@ -4,6 +4,7 @@ an ANT+ combined speed/cadence sensor (e.g. Garmin GSC10)
 
 Based heavily on https://gist.github.com/ramunasd/a2e40cd13dd4cacf5685
 """
+from __future__ import print_function
 
 
 import sys
@@ -39,7 +40,7 @@ class CadenceListener(event.EventCallback):
                 self.wheelSpeed = 3.6 * 2105.0 / (speedTime - self.lastW)
             self.lastW = speedTime
             self.lastC = cadenceTime
-            print cadenceTime, ' ', speedTime, ':', crankRevolutions, self.wheelSpeed
+            print(cadenceTime, ' ', speedTime, ':', crankRevolutions, self.wheelSpeed)
 
 
 NETKEY = '\xB9\xA5\x21\xFB\xBD\x72\xC3\x45'
@@ -78,7 +79,7 @@ try:
     # Time to go live
     channel.open()
 
-    print "Listening for events..."
+    print("Listening for events...")
     while True:
         time.sleep(60)
 finally:
