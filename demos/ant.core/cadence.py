@@ -28,24 +28,28 @@ class CadenceListener(event.EventCallback):
     lastC = 0
     lastW = 0
     wheelSpeed = 0
+    crankSpeed = 0
+    crankSpeedMax = 120
 
     def getWheelSpeed(self):
         return self.wheelSpeed
 
     def process(self, msg):
-        if isinstance(msg, message.ChannelBroadcastDataMessage):
+        if not isinstance(msg, message.ChannelBroadcastDataMessage):
+            return
 
-            cadenceTime = convertSB(msg.payload[1:3])
-            speedTime = convertSB(msg.payload[5:7])
-            if cadenceTime == self.lastC and speedTime == self.lastW:
-                return
-            crankRevolutions = convertSB(msg.payload[3:5])
-            wheelRevolutions =  convertSB(msg.payload[7:9])
-            if speedTime > self.lastW:
-                self.wheelSpeed = 3600 * 2105.0 /1024 / (speedTime - self.lastW)
-            self.lastW = speedTime
-            self.lastC = cadenceTime
-            print(self.wheelSpeed)
+        cadenceTime = convertSB(msg.payload[1:3])
+        speedTime = convertSB(msg.payload[5:7])
+        if cadenceTime == self.lastC and speedTime == self.lastW:
+            return
+        crankRevolutions = convertSB(msg.payload[3:5])
+        wheelRevolutions =  convertSB(msg.payload[7:9])
+        if speedTime > self.lastW:
+            self.wheelSpeed = 3600 * 2105.0 /1024 / (speedTime - self.lastW)
+        if cadenceTime > self.lastC:
+            self.crankSpeed = 1024 * 60.0 / (cadenceTime - self.lastC) 
+        self.lastW = speedTime
+        self.lastC = cadenceTime
 
 
 
@@ -53,15 +57,25 @@ class Biscuit:
     listener = CadenceListener()
     def __init__(self):
         pygame.init()
-        self.surface = pygame.display.set_mode((600,400))
-        self.font = pygame.freetype.SysFont('Consolas', 90)
+        self.surface = pygame.display.set_mode()# (600,500))
+        self.width = self.surface.get_width();
+        self.height = self.surface.get_height();
+        self.font = pygame.freetype.SysFont('Consolas', int(self.height/3))
 
     def on_update(self):
         self.surface.fill((10,20,10))
         self.font.render_to(self.surface,
-                            (25,100),
+                            (25,80),
                             "{: 5.1f} km/h".format(self.listener.wheelSpeed),
                             (0,255,0))
+        self.font.render_to(self.surface,
+                            (25,int(self.height/2)+10),
+                            "{: 5.1f} rpm".format(self.listener.crankSpeed),
+                            (0,255,0))
+        pix = self.width *((self.listener.crankSpeed-40)/ self.listener.crankSpeedMax)
+        pix = max(pix, 0)
+        pygame.draw.rect(self.surface, (180,0,0), pygame.Rect(0,self.height/2-60, pix, 50))
+        pygame.draw.rect(self.surface, (0,0,180), pygame.Rect(pix,self.height/2-60, 20, 50))
         pygame.display.flip()
 
 
@@ -99,16 +113,23 @@ channel.period = 8086
 # And ANT frequency 57
 channel.frequency = 57
 
+running = True
 try:
     # Time to go live
     channel.open()
 
     print("Listening for events...")
-    while True:
+    while running:
         time.sleep(0.1)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            if event.type == pygame.KEYUP and event.key == pygame.K_q:
+                running = False
         app.on_update()
-
+    
 finally:
+    pygame.quit()
     # Shutdown channel
     channel.close()
     channel.unassign()
