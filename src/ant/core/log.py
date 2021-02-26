@@ -52,16 +52,16 @@ class LogReader(object):
         if self.is_open:
             self.close()
 
-        self.fd = open(filename, 'r')
+        self.fd = open(filename, 'rb')
         self.is_open = True
-        self.unpacker = msgpack.Unpacker()
+        self.unpacker = msgpack.Unpacker(raw=True)
 
         # Here be dragons
         self.unpacker.feed(self.fd.read())
         self.fd.close()
 
         header = self.unpacker.unpack()
-        if len(header) != 2 or header[0] != 'ANT-LOG' or header[1] != 0x01:
+        if len(header) != 2 or header[0] != b'ANT-LOG' or header[1] != 0x01:
             raise IOError('Could not open log file (unknown format).')
 
     def close(self):
@@ -94,12 +94,12 @@ class LogWriter(object):
         if self.is_open:
             self.close()
 
-        self.fd = open(filename, 'w')
+        self.fd = open(filename, 'wb')
         self.is_open = True
         self.packer = msgpack.Packer()
 
         header = ['ANT-LOG', 0x01]  # [MAGIC, VERSION]
-        self.fd.write(str(self.packer.pack(header)))
+        self.fd.write(self.packer.pack(header))
 
     def close(self):
         if self.is_open:
@@ -118,7 +118,7 @@ class LogWriter(object):
         if isinstance(ev[-1], bytearray):
             ev[-1] = list(ev[-1])
 
-        self.fd.write(str(self.packer.pack(ev)))
+        self.fd.write(self.packer.pack(ev))
 
     def logOpen(self):
         self._logEvent(EVENT_OPEN)
