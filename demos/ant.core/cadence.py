@@ -25,11 +25,14 @@ def convertSB(raw):
 
 
 class CadenceListener(event.EventCallback):
-    lastC = 0
-    lastW = 0
+    prevCtime = 0
+    prevWtime = 0
+    prevWrevs = 0
+    prevCrevs = 0
     wheelSpeed = 0
     crankSpeed = 0
     crankSpeedMax = 120
+    initialized = False
 
     def getWheelSpeed(self):
         return self.wheelSpeed
@@ -38,18 +41,36 @@ class CadenceListener(event.EventCallback):
         if not isinstance(msg, message.ChannelBroadcastDataMessage):
             return
 
-        cadenceTime = convertSB(msg.payload[1:3])
-        speedTime = convertSB(msg.payload[5:7])
-        if cadenceTime == self.lastC and speedTime == self.lastW:
-            return
-        crankRevolutions = convertSB(msg.payload[3:5])
+        crankTime = convertSB(msg.payload[1:3])
+        wheelTime = convertSB(msg.payload[5:7])
+
+        crankRevolutions = convertSB(msg.payload[3:5]) 
         wheelRevolutions =  convertSB(msg.payload[7:9])
-        if speedTime > self.lastW:
-            self.wheelSpeed = 3600 * 2105.0 /1024 / (speedTime - self.lastW)
-        if cadenceTime > self.lastC:
-            self.crankSpeed = 1024 * 60.0 / (cadenceTime - self.lastC) 
-        self.lastW = speedTime
-        self.lastC = cadenceTime
+
+        if(not self.initialized):
+            self.prevCtime = crankTime
+            self.prevWtime = wheelTime
+            self.prevCrevs = crankRevolutions
+            self.prevWrevs = wheelRevolutions
+            self.initialized = True
+            return
+        
+        if(crankTime > self.prevCtime):
+            self.crankSpeed = 60 * 1024 * ((crankRevolutions - self.prevCrevs) /
+                                           float(crankTime - self.prevCtime))
+            print("crank", self.crankSpeed)
+            self.prevCtime = crankTime
+            self.prevCrevs = crankRevolutions
+
+        if(wheelTime > self.prevWtime):
+            revs = ((wheelRevolutions - self.prevWrevs) /
+                    float(wheelTime - self.prevWtime))
+            self.wheelSpeed = revs * 2205 * 3600 / 1024.0 
+            print("wheel",
+                  (float(wheelTime - self.prevWtime)),
+                  self.wheelSpeed)
+            self.prevWtime = wheelTime
+            self.prevWrevs = wheelRevolutions
 
 
 
