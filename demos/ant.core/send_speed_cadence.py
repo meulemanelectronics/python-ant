@@ -2,6 +2,7 @@
 # just because it's on github
 
 import binascii
+import random
 import serial
 import sys
 import time
@@ -59,15 +60,15 @@ stick.write(msg)
 if evm.waitForAck(msg) != RESPONSE_NO_ERROR:
     sys.exit()
 
-# Initialize it as a receiving channel using our network key
-msg = ChannelAssignMessage(channelType = 0x10)
+# Now set the channel id for pairing with an ANT+ bike cadence/speed sensor
+msg = ChannelIDMessage(device_type=121, device_number=0xdbdb, trans_type=0x1)
 stick.write(msg)
 
 if evm.waitForAck(msg) != RESPONSE_NO_ERROR:
     sys.exit()
 
-# Now set the channel id for pairing with an ANT+ bike cadence/speed sensor
-msg = ChannelIDMessage(device_type=121, device_number=0xdbdb, trans_type=0x1)
+# Initialize it as a sending channel using our network key
+msg = ChannelAssignMessage(channelType = 0x10)
 stick.write(msg)
 
 if evm.waitForAck(msg) != RESPONSE_NO_ERROR:
@@ -95,27 +96,51 @@ if evm.waitForAck(msg) != RESPONSE_NO_ERROR:
     sys.exit()
 
 def sandcdata(cadence_time, cadence_revs, speed_time, speed_revs):
-    cadence_ms = cadence_time * 1024
-    speed_ms = speed_time * 1024
+    cadence_ms = 0xffff & (int(cadence_time * 1024))
+    speed_ms = 0xffff & (int(speed_time * 1024))
+
     return [ cadence_ms % 256, cadence_ms >> 8, cadence_revs % 256, cadence_revs >> 8,
              speed_ms % 256, speed_ms >> 8, speed_revs % 256, speed_revs >> 8 ]
 
-cadence_time = 0
-speed_time = 0
+clock_time = 0.0
+cadence_time = 0.0
+speed_time = 0.0
 cadence_revs  = 10
 speed_revs  = 10
+interval = 0.1
+speed_period = 0.24 # seconds/wheel rev; 0.24 is somewhere around 30km/h
+cadence_period = 1
+
+def is_pedalling(cadence_time):
+    return (cadence_time % 10.0) > 5.0
+
+def is_speed_tick_time(clock_time, last_tick):
+    return ((clock_time- last_tick) > speed_period)
+
+def is_cadence_tick_time(clock_time, last_tick):
+    return ((clock_time- last_tick) > cadence_period)
+
+
 while True:
-    print(cadence_time)
-    cadence_time = cadence_time +1
-    speed_time = speed_time + 1
-    cadence_revs = cadence_revs + 3
-    speed_revs = speed_revs + 2
-    data = bytes(sandcdata(cadence_time, cadence_revs, speed_time, speed_revs))
+    clock_time= clock_time + interval
+    speed_period = 0.24 + ( clock_time % 30)/30.0/2
+    cadence_period = 1 - ( clock_time % 30)/30.0/2
+    if (is_cadence_tick_time(clock_time, cadence_time)):
+        print(clock_time, "pedal")
+        cadence_time = clock_time
+        cadence_revs = cadence_revs + 1
+    if(is_speed_tick_time(clock_time, speed_time)):
+        print(clock_time, "wheel")
+        speed_time = clock_time
+        speed_revs = speed_revs + 1
+    data = bytes(sandcdata(cadence_time, int(cadence_revs),
+                           speed_time, int(speed_revs)))
     msg = ChannelBroadcastDataMessage(data=data)
-    print("<< " + str(binascii.hexlify(msg.encode())))
+#    print(binascii.hexlify(data))
+#    print("<< " + str(binascii.hexlify(msg.encode())))
     stick.write(msg)
 
-    time.sleep(1)
+    time.sleep(interval)
 
 
 # Shutdown
