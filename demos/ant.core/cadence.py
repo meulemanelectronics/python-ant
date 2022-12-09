@@ -8,6 +8,7 @@ from __future__ import print_function
 
 import sys
 import time
+from datetime import datetime
 
 import pygame
 import pygame.freetype
@@ -101,6 +102,11 @@ class Biscuit:
         self.font.render_to(self.surface,
                             (25,int(self.height/2)+10),
                             "{: 5.1f} rpm".format(self.listener.crankSpeed),
+                            (0,255,0))
+        now = datetime.now().strftime("%H:%M:%S")
+        self.font.render_to(self.surface,
+                            (200,int(3*self.height/5)+100),
+                            now,
                             (0,255,0))
         pix = self.width *((self.listener.crankSpeed-40)/ self.listener.crankSpeedMax)
         pix = max(pix, 0)
