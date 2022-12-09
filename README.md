@@ -1,9 +1,12 @@
 This is a fork of one of the many forks of the original python-ant project,
-which I am modifying for my Linux-based speed/cadence display. 
+which I am modifying for my Linux-based speed/cadence display.
 
-- demos/ant.core/cadence.py displays output from combined speed/cadence sensor
-- python3 support so I can use the arcade library
+demos/ant.core/cadence.py displays output from combined speed/cadence
+sensor using [pygame](https://www.pygame.org).  If you're not using
+Nix, set the environment variable FONT to the full pathname of some
+TTF file or other that you'd like to use for the display.
 
+![screenshot](20221209_22h46m07s_grim.png)
 
 
 ----
