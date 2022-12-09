@@ -9,6 +9,7 @@ from __future__ import print_function
 import sys
 import time
 from datetime import datetime
+import os
 
 import pygame
 import pygame.freetype
@@ -33,7 +34,7 @@ class CadenceListener(event.EventCallback):
     wheelSpeed = 0
     crankSpeed = 0
     crankSpeedMax = 120
-    initialized = False
+    startTime = None
 
     def getWheelSpeed(self):
         return self.wheelSpeed
@@ -45,15 +46,15 @@ class CadenceListener(event.EventCallback):
         crankTime = convertSB(msg.payload[1:3])
         wheelTime = convertSB(msg.payload[5:7])
 
-        crankRevolutions = convertSB(msg.payload[3:5]) 
+        crankRevolutions = convertSB(msg.payload[3:5])
         wheelRevolutions =  convertSB(msg.payload[7:9])
 
-        if(not self.initialized):
+        if(not self.startTime):
             self.prevCtime = crankTime
             self.prevWtime = wheelTime
             self.prevCrevs = crankRevolutions
             self.prevWrevs = wheelRevolutions
-            self.initialized = True
+            self.startTime = datetime.now()
             return
         # handle wraparound
         if(crankTime < self.prevCtime):
@@ -75,7 +76,7 @@ class CadenceListener(event.EventCallback):
         if(wheelTime > self.prevWtime):
             revs = ((wheelRevolutions - self.prevWrevs) /
                     float(wheelTime - self.prevWtime))
-            self.wheelSpeed = revs * 2205 * 3600 / 1024.0 
+            self.wheelSpeed = revs * 2205 * 3600 / 1024.0
             print("wheel",
                   (float(wheelTime - self.prevWtime)),
                   self.wheelSpeed)
@@ -107,10 +108,14 @@ class Biscuit:
                             (scale/16,scale + 20),
                             "{: 5.1f} rpm".format(self.listener.crankSpeed),
                             (0,255,0))
-        now = datetime.now().strftime("%H:%M:%S")
+        if self.listener.startTime !=  None:
+            runTime = datetime.now() - self.listener.startTime
+            timelabel = str(runTime)[0:9]
+        else:
+            timelabel = datetime.now().strftime("%H:%M:%S")
         self.font.render_to(self.surface,
-                            now,
                             (scale, scale * 2 + 30),
+                            timelabel,
                             (0,255,0))
         pix = self.width *((self.listener.crankSpeed-40)/ self.listener.crankSpeedMax)
         pix = max(pix, 0)
@@ -166,10 +171,16 @@ try:
                 running = False
             if event.type == pygame.KEYUP and event.key == pygame.K_q:
                 running = False
+            if event.type == pygame.KEYUP and event.key == pygame.K_SPACE:
+                if app.listener.startTime == None:
+                    app.listener.startTime = datetime.now()
+                else:
+                    app.listener.startTime = None
             if event.type == pygame.VIDEORESIZE:
                 app.width = event.w
                 app.height = event.h
                 app.font = None
+
         app.on_update()
     
 finally:
