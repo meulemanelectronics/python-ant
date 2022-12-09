@@ -88,25 +88,29 @@ class Biscuit:
     listener = CadenceListener()
     def __init__(self):
         pygame.init()
-        self.surface = pygame.display.set_mode()# (600,500))
+        self.surface = pygame.display.set_mode((600,300), pygame.RESIZABLE)
         self.width = self.surface.get_width();
         self.height = self.surface.get_height();
-        self.font = pygame.freetype.SysFont('Consolas', int(self.height/3))
+        self.font = None
 
     def on_update(self):
+        scale = int(min(self.width/7, (self.height-20)/3))
+        if(self.font == None):
+            self.font = pygame.freetype.Font(os.environ['FONT'], scale)
+
         self.surface.fill((10,20,10))
         self.font.render_to(self.surface,
-                            (25,80),
+                            (scale/16,10),
                             "{: 5.1f} km/h".format(self.listener.wheelSpeed),
                             (0,255,0))
         self.font.render_to(self.surface,
-                            (25,int(self.height/2)+10),
+                            (scale/16,scale + 20),
                             "{: 5.1f} rpm".format(self.listener.crankSpeed),
                             (0,255,0))
         now = datetime.now().strftime("%H:%M:%S")
         self.font.render_to(self.surface,
-                            (200,int(3*self.height/5)+100),
                             now,
+                            (scale, scale * 2 + 30),
                             (0,255,0))
         pix = self.width *((self.listener.crankSpeed-40)/ self.listener.crankSpeedMax)
         pix = max(pix, 0)
@@ -162,6 +166,10 @@ try:
                 running = False
             if event.type == pygame.KEYUP and event.key == pygame.K_q:
                 running = False
+            if event.type == pygame.VIDEORESIZE:
+                app.width = event.w
+                app.height = event.h
+                app.font = None
         app.on_update()
     
 finally:
