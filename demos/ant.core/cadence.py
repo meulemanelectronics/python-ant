@@ -54,7 +54,16 @@ class CadenceListener(event.EventCallback):
             self.prevWrevs = wheelRevolutions
             self.initialized = True
             return
-        
+        # handle wraparound
+        if(crankTime < self.prevCtime):
+            self.prevCtime = self.prevCtime - 65536
+        if(wheelTime < self.prevWtime):
+            self.prevWtime = self.prevWtime - 65536
+        if(crankRevolutions < self.prevCrevs):
+            self.prevCrevs = self.prevCrevs - 65536
+        if(wheelRevolutions < self.prevWrevs):
+            self.prevWrevs = self.prevWrevs - 65536
+
         if(crankTime > self.prevCtime):
             self.crankSpeed = 60 * 1024 * ((crankRevolutions - self.prevCrevs) /
                                            float(crankTime - self.prevCtime))
