@@ -91,14 +91,13 @@ class Driver(object):
         if not self.opened:
             raise DriverError("Could not write to device (not open).")
 
-        data = msg.encode()
-        ret = self._write(data)
+        ret = self._write(msg)
 
         with self._lock:
             if self.debug:
-                self._dump(data, 'WRITE')
+                self._dump(msg, 'WRITE')
             if self.log:
-                self.log.logWrite(data[0:ret])
+                self.log.logWrite(msg.payload[0:ret])
         return ret
 
     @staticmethod
@@ -235,7 +234,7 @@ class USB2Driver(Driver):
         self._epOut = self._epIn = None
 
     def _read(self, count):
-        return self._epIn.read(count).tostring()
+        return self._epIn.read(count).tobytes()
 
     def _write(self, data):
         # TODO handle USBError here
