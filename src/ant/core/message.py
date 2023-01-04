@@ -98,7 +98,7 @@ class Message(with_metaclass(MessageType)):
             checksum ^= byte
         return checksum
 
-    def encode(self):
+    def encode(self, encoding='utf-8'):
         raw, payload = bytearray(len(self)), self._payload
         raw[0:MSG_HEADER_SIZE-1] = (MESSAGE_TX_SYNC, len(payload), self.type)
         raw[MSG_HEADER_SIZE:-MSG_FOOTER_SIZE] = payload
