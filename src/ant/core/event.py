@@ -133,7 +133,7 @@ class EventMachine(object):
         self.driver = driver
         self.callbacks = set()
         self.eventPump = None
-        self.running = False
+        self.evPump = None
 
         self.evmCallbackLock = Lock()
         self.runningLock = Lock()
@@ -168,19 +168,24 @@ class EventMachine(object):
         with self.runningLock:
             if self.running:
                 return
-            self.running = True
 
             if driver is not None:
                 self.driver = driver
             self.driver.open()
 
-            evPump = self.eventPump = Thread(name=name, target=EventPump, args=(self,))
-            evPump.start()
+            self.evPump = self.eventPump = Thread(name=name, target=EventPump, args=(self,))
+            self.evPump.start()
+
+    @property
+    def running(self):
+        if self.evPump:
+            return self.evPump.is_alive()
+        else:
+            return False
 
     def stop(self):
         with self.runningLock:
             if not self.running:
                 return
-            self.running = False
         self.eventPump.join()
         self.driver.close()
