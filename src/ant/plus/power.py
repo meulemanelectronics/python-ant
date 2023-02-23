@@ -114,7 +114,7 @@ class BicyclePower(DeviceProfile):
                     self.pedalPowerRatio = None
                 else:
                     self.pedalDifferentiation = (pedalPowerByte >> 7) == 1
-                    self.pedalPowerRatio = old_div((pedalPowerByte & 0x7F), 100)  # Convert from percent to fraction
+                    self.pedalPowerRatio = (pedalPowerByte & 0x7F)
 
                 if self.cadence == 0xFF:  # Invalid value
                     self.cadence = None
